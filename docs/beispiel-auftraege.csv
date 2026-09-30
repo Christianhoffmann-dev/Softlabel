@@ -1,0 +1,4 @@
+auftrag;empfaenger;adresse;gewicht;tracking;artnr;menge;ean;charge;mhd;bezeichnung
+AF-2026-1042;Muster GmbH;Beispielstr. 1, 12345 Musterstadt;248,5;CV111111111DE;ART-88420;24;4006381333931;C-2291;03/2028;Fräse Ø8 HSS
+AF-2026-1043;Spedition Nord;Hafenstr. 9, 20359 Hamburg;412;CV222222222DE;ART-11007;60;96385074;C-2292;07/2028;Sechskantschraube M10
+AF-2026-1044;Bau AG Süd;Industriestr. 44, 86153 Augsburg;89;CV333333333DE;ART-33021;8;4006381333931;C-2293;11/2027;Warzenblecher 55°

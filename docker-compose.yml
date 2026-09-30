@@ -1,0 +1,22 @@
+# Portainer → Stacks → "Deploy a stack from a repository" ODER hier einfügen:
+# Docker-Volume "softlabel-data" wird automatisch angelegt.
+services:
+  softlabel:
+    image: softlabel:latest        # lokales Build: docker build -t softlabel .
+    # build: .                     # alternativ direkt aus dem Repo bauen
+    container_name: softlabel
+    restart: unless-stopped
+    ports:
+      - "8000:8000"
+    environment:
+      - TZ=Europe/Berlin
+      # - SL_BASE_PATH=/softlabel  # nur nötig hinter Reverse-Proxy mit Präfix
+    volumes:
+      - softlabel-data:/data
+    # Drucker-Freigaben (SMB) brauchen kein Volume; für lokale Ordner-Freigabe optional:
+    # - type: bind
+    #   source: /srv/softlabel-share
+    #   target: /data-share
+
+volumes:
+  softlabel-data:

@@ -1,0 +1,74 @@
+{% extends "base.html" %}
+{% block title %}Drucken · {{ t.name }}{% endblock %}
+{% block body %}
+<div class="row space-between" style="margin-bottom:16px">
+  <h1 style="margin:0;display:flex;align-items:center;gap:12px">
+    {{ t.name }}
+    <span class="badge">{{ "%.1f"|format(t.width_mm) }} × {{ "%.1f"|format(t.height_mm) }} mm · {{ t.dpi }} dpi
+      {% if t.label_count > 1 %}· {{ t.label_count }}er-Bogen{% endif %}</span>
+  </h1>
+  <a class="btn ghost" href="{{ u('/designer/') ~ t.id }}">Bearbeiten</a>
+</div>
+
+<div class="print-grid">
+  <div>
+    <div class="panel">
+      <h3>1 · Daten</h3>
+      <div class="drop" id="drop">
+        CSV / TSV / Excel (.xlsx) hierher ziehen oder klicken<br>
+        <span style="font-size:12px;opacity:.8">Spaltenköpfe = Feldnamen aus der Vorlage</span>
+        <input type="file" id="file" accept=".csv,.tsv,.txt,.xlsx,.xlsm" hidden></div>
+      <div class="note" id="importNote" style="margin-top:8px">Ohne Datei: Einzeldruck mit Testdaten.</div>
+      <div style="margin-top:10px" id="rowNav" hidden>
+        <div class="row gap">
+          <button class="btn small ghost" id="rowPrev">◀</button>
+          <span class="badge" id="rowPos">–</span>
+          <button class="btn small ghost" id="rowNext">▶</button>
+          <span class="spacer"></span>
+          <label class="chk" style="font-size:12px"><input type="checkbox" id="allSheets"> alle Bogen-Label mit Zeile 1</label>
+        </div>
+        <div style="max-height:150px;overflow:auto;margin-top:8px;border:1px solid var(--border);border-radius:8px">
+          <table class="dtable" id="dtable"></table>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel" style="margin-top:12px" {% if not keys %}hidden{% endif %} id="manualPanel">
+      <h3>Daten eingeben</h3>
+      <div id="manualFields"></div>
+    </div>
+
+    <div class="panel" style="margin-top:12px">
+      <h3>2 · Export</h3>
+      <div class="kv" style="margin-bottom:10px">
+        <label>Anzahl Sätze</label><input type="number" id="copies" value="1" min="1" max="5000">
+      </div>
+      <div class="row gap" style="flex-wrap:wrap">
+        <button class="btn" id="expPdf">PDF</button>
+        <button class="btn" id="expPng">PNG</button>
+        <button class="btn" id="expZpl">ZPL (Zebra)</button>
+        <button class="btn ghost" id="expSvg">SVG</button>
+        <button class="btn ghost" id="brPrint">🖨 Browser-Druck</button>
+      </div>
+      <div class="note" style="margin-top:10px;font-size:12px">
+        PNG in Vorlagen-DPI (druckfertig) · PDF mit Bogenlayout fürs Schneidewerk ·
+        ZPL direkt an Zebra · Browser-Druck: Maßstab „100 %“, Ränder aus.
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>Vorschau <span class="badge" id="pvInfo"></span></h3>
+    <div class="sheet-preview" id="preview">…</div>
+  </div>
+</div>
+{% endblock %}
+{% block scripts %}
+<script>
+window.TID = {{ t.id }};
+window.KEYS = {{ keys | tojson }};
+window.LABEL_COUNT = {{ t.label_count }};
+window.W = {{ t.width_mm }}; window.H = {{ t.height_mm }};
+</script>
+<script src="{{ u('/static/print.js') }}"></script>
+{% endblock %}

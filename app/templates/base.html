@@ -1,0 +1,29 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}SoftLabel{% endblock %}</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><rect width='100' height='100' rx='22' fill='%234f6ef7'/><text x='50' y='68' font-size='55' text-anchor='middle'>🏷</text></svg>">
+<link rel="stylesheet" href="{{ u('/static/app.css') }}">
+<script defer src="{{ u('/static/icons.js') }}"></script>
+</head>
+<body>
+<header class="topbar">
+  <a class="brand" href="{{ u('/') }}"><span class="logo">🏷</span> Soft<b style="margin-left:2px;font-weight:800;color:var(--accent)">Label</b></a>
+  <nav>
+    <a href="{{ u('/') }}" {% if nav == 'home' %}class="active"{% endif %}>Vorlagen</a>
+    <a href="{{ u('/designer') }}" {% if nav == 'designer' %}class="active"{% endif %}>Designer</a>
+    <a href="{{ u('/protokoll') }}" {% if nav == 'log' %}class="active"{% endif %}>Protokoll</a>
+  </nav>
+  <span class="spacer"></span>
+  <button class="btn small ghost" id="whoBtn" title="Wer bist du? Fürs Protokoll">–</button>
+</header>
+<main>
+{% block body %}{% endblock %}
+</main>
+{% block scripts %}{% endblock %}
+<script src="{{ u('/static/who.js') }}"></script>
+<div id="toast" class="toast"></div>
+</body>
+</html>

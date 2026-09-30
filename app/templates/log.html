@@ -1,0 +1,43 @@
+{% extends "base.html" %}
+{% set nav = 'log' %}
+{% block title %}Protokoll · SoftLabel{% endblock %}
+{% block body %}
+<h1>Protokoll</h1>
+<div class="tabs">
+  <button class="btn small on" id="tabJobs">Export-Aufträge</button>
+  <button class="btn small ghost" id="tabAudit">Änderungen</button>
+</div>
+
+<div class="panel" id="jobs">
+  <h3>Letzte Exporte</h3>
+  <table class="log">
+    <tr><th>Zeit</th><th>Vorlage</th><th>Format</th><th>Datei</th><th>Label</th><th>Erstellt von</th></tr>
+    {% for j in jobs %}
+    <tr><td>{{ j.created_at }}</td><td>{{ j.template_name or '–' }}</td>
+      <td><span class="badge">{{ j.format|upper }}</span></td>
+      <td style="font-size:12px">{{ j.filename }}</td>
+      <td>{{ j.labels }}</td><td>{{ j.created_by }}</td></tr>
+    {% else %}
+    <tr><td colspan="6" class="note">Noch keine Exporte.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+
+<div class="panel" id="audit" hidden style="margin-top:12px">
+  <h3>Änderungen</h3>
+  <table class="log">
+    <tr><th>Zeit</th><th>Akteur</th><th>Aktion</th><th>Detail</th></tr>
+    {% for a in audit %}
+    <tr><td>{{ a.ts }}</td><td>{{ a.actor }}</td><td>{{ a.action }}</td>
+      <td style="font-size:12px">{{ a.detail }}</td></tr>
+    {% else %}
+    <tr><td colspan="4" class="note">Keine Einträge.</td></tr>
+    {% endfor %}
+  </table>
+</div>
+<script>
+  const jobs=$('#jobs'), audit=$('#audit'), tj=$('#tabJobs'), ta=$('#tabAudit');
+  tj.onclick=()=>{jobs.hidden=false;audit.hidden=true;tj.className='btn small on';ta.className='btn small ghost';};
+  ta.onclick=()=>{jobs.hidden=true;audit.hidden=false;ta.className='btn small on';tj.className='btn small ghost';};
+</script>
+{% endblock %}

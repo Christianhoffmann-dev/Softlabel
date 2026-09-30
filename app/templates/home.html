@@ -1,0 +1,148 @@
+{% extends "base.html" %}
+{% set nav = 'home' %}
+{% block title %}Vorlagen · SoftLabel{% endblock %}
+{% block body %}
+<div class="home-wrap">
+
+  <!-- Ordernavigation -->
+  <aside class="folders">
+    <a href="{{ u('/') }}" class="{{ 'on' if cur is none and not q else '' }}">🗂 Alle Labels <span class="cnt">{{ counts.all }}</span></a>
+    <a href="{{ u('/?folder=0') }}" class="{{ 'on' if cur == 0 else '' }}" data-root>🏠 Ohne Ordner <span class="cnt">{{ counts.root }}</span></a>
+    <hr>
+    <div class="lbl">Kunden / Ordner</div>
+    {% for f in folders %}
+    <a href="{{ u('/?folder=') ~ f.id }}" class="{{ 'on' if cur == f.id else '' }}" data-fid="{{ f.id }}" data-fname="{{ f.name|e }}">
+      🗀 {{ f.name }} <span class="cnt">{{ f.n }}</span>
+      <span class="fadmin">
+        <button title="Umbenennen" onclick="return renameFolder(event,{{ f.id }})">✎</button>
+        <button title="Ordner löschen (Labels bleiben im Hauptbereich)" onclick="return delFolder(event,{{ f.id }},'{{ f.name|e }}')">🗑</button>
+      </span>
+    </a>
+    {% endfor %}
+    <div style="padding:8px 6px 2px"><a class="btn small ghost" href="#" onclick="return newFolder(event)">＋ Neuer Ordner</a></div>
+    <hr>
+    <a href="{{ u('/archiv') }}">🗄 Archiv <span class="cnt">{{ counts.archived }}</span></a>
+  </aside>
+
+  <!-- Labelliste -->
+  <div class="home-main">
+    <div class="row space-between" style="margin-bottom:14px">
+      <h1 style="margin:0">{% if cur %}{{ folders | selectattr('id','equalto',cur) | map(attribute='name') | first | default('Ordner') }}{% elif cur == 0 %}Ohne Ordner{% else %}Alle Labels{% endif %}</h1>
+      <a class="btn" href="{{ u('/designer') }}{% if cur %}?folder={{ cur }}{% endif %}">＋ Neues Label{% if cur %} hier{% endif %}</a>
+    </div>
+    <div class="row gap" style="margin-bottom:16px">
+      <input id="q" type="search" placeholder="In dieser Ansicht suchen…" style="width:280px" value="{{ q }}">
+      <span class="note" id="qCount">{{ items|length }} Labels</span>
+    </div>
+    {% if not items %}
+    <div class="empty">Keine Labels{% if cur %} in diesem Ordner{% elif cur == 0 %} ohne Ordner{% endif %} — <a href="{{ u('/designer') }}{% if cur %}?folder={{ cur }}{% endif %}">jetzt erstellen</a> oder bestehende mit „Verschieben“ hierher legen.</div>
+    {% endif %}
+    <div class="grid" id="tplGrid">
+      {% for t in items %}
+      <div class="card" data-name="{{ t.name|e|lower }}" data-id="{{ t.id }}">
+        <a class="thumb-link" href="{{ u('/designer/') ~ t.id }}" tabindex="-1" title="Im Designer öffnen">
+          <img class="thumb" loading="lazy" src="{{ u('/api/thumb/') ~ t.id }}.png" alt="{{ t.name|e }}">
+        </a>
+        <a class="card-title" href="{{ u('/designer/') ~ t.id }}">{{ t.name }}</a>
+        <div class="card-meta">
+          {{ "%.1f"|format(t.width_mm) }} × {{ "%.1f"|format(t.height_mm) }} mm · {{ t.dpi }} dpi
+          {% if t.label_count > 1 %}· {{ t.label_count }}er-Bogen{% endif %}
+        </div>
+        <div class="card-meta dim">geändert {{ t.updated_at }}{% if t.last_edited_by %} · von {{ t.last_edited_by }}{% endif %}</div>
+        {% if cur is none %}<div class="card-meta">{% if t.folder_id and t.folder_id in fname %}🗀 {{ fname[t.folder_id] }}{% elif t.folder_id %}<span class="note">🗀 Ordner gelöscht?</span>{% else %}<span class="note">🏠 ohne Ordner</span>{% endif %}</div>{% endif %}
+        <div class="card-actions">
+          <a class="btn small" href="{{ u('/drucken/') ~ t.id }}">Drucken / Export</a>
+          <a class="btn small ghost" href="{{ u('/designer/') ~ t.id }}">Bearbeiten</a>
+          <button class="btn small ghost" onclick="openMove({{ t.id }},'{{ t.name|e }}')">Verschieben</button>
+          <button class="btn small ghost" onclick="dupl({{ t.id }})">Kopie</button>
+          <button class="btn small ghost" onclick="archive({{ t.id }},1)">Archiv</button>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+</div>
+
+<!-- Verschieben-Popover -->
+<div class="popover" id="movePop" style="width:240px">
+  <h3 style="margin-bottom:8px">Label verschieben nach</h3>
+  <div id="moveList"></div>
+  <button class="btn small ghost" style="margin-top:8px" onclick="document.getElementById('movePop').classList.remove('open')">Abbrechen</button>
+</div>
+
+<script>
+const folders = [
+  {% for f in folders %}{ id: {{ f.id }}, name: {{ f.name|tojson }} }{% if not loop.last %},{% endif %}{% endfor %}
+];
+let moveTarget = null;
+
+function openMove(tid, name){
+  moveTarget = tid;
+  const pop = document.getElementById('movePop');
+  let html = `<div class="hint" style="margin-bottom:6px">${name}</div>`;
+  html += `<button class="tool" style="width:100%;margin:2px 0" onclick="moveTo(0)">🏠 Hauptbereich</button>`;
+  folders.forEach(f => html += `<button class="tool" style="width:100%;margin:2px 0" onclick="moveTo(${f.id})">🗀 ${f.name}</button>`);
+  document.getElementById('moveList').innerHTML = html;
+  const card = document.querySelector(`.card[data-id="${tid}"]`);
+  const r = card.getBoundingClientRect();
+  pop.style.position = 'fixed';
+  pop.style.left = Math.min(r.left, window.innerWidth - 260) + 'px';
+  pop.style.top = (r.top + 40) + 'px';
+  pop.classList.add('open');
+}
+async function moveTo(fid){
+  await fetch('{{ u("/api/templates") }}/' + moveTarget + '/move', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ folder_id: fid || null })
+  });
+  location.reload();
+}
+document.addEventListener('click', e => {
+  const pop = document.getElementById('movePop');
+  if (pop.classList.contains('open') && !pop.contains(e.target) && !e.target.closest('[onclick^="openMove"]'))
+    pop.classList.remove('open');
+});
+
+async function newFolder(e){
+  e.preventDefault();
+  const name = prompt('Name des Ordners (z. B. Kunde / Spedition):');
+  if (!name || !name.trim()) return;
+  const r = await fetch('{{ u("/api/folders") }}', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ name: name.trim() })
+  });
+  if (r.ok) { const j = await r.json(); location = '{{ u("/") }}?folder=' + j.id; }
+  return false;
+}
+async function renameFolder(e, fid){
+  e.preventDefault(); e.stopPropagation();
+  const a = e.target.closest('a');
+  const cur = a.dataset.fname;
+  const name = prompt('Ordner umbenennen:', cur);
+  if (!name || !name.trim() || name === cur) return false;
+  await fetch('{{ u("/api/folders") }}/' + fid + '/rename', {
+    method: 'POST', headers: {'Content-Type':'application/json'},
+    body: JSON.stringify({ name: name.trim() })
+  });
+  location.reload(); return false;
+}
+async function delFolder(e, fid, name){
+  e.preventDefault(); e.stopPropagation();
+  if (!confirm(`Ordner „${name}“ löschen?\n\nLabels daraus bleiben erhalten und landen im Hauptbereich.`)) return false;
+  await fetch('{{ u("/api/folders") }}/' + fid, { method: 'DELETE' });
+  location = '{{ u("/") }}'; return false;
+}
+async function dupl(id){ const r=await fetch('{{ u("/api/templates") }}/'+id+'/duplicate',{method:'POST'}); if(r.ok) location.reload(); }
+async function archive(id,a){ await fetch('{{ u("/api/templates") }}/'+id+'/archive?archived='+a,{method:'POST'}); location.reload(); }
+const q = document.getElementById('q');
+if (q) q.addEventListener('input', () => {
+  const v = q.value.trim().toLowerCase();
+  let n = 0;
+  document.querySelectorAll('#tplGrid .card').forEach(c => {
+    const show = !v || c.dataset.name.includes(v);
+    c.style.display = show ? '' : 'none'; if (show) n++;
+  });
+  document.getElementById('qCount').textContent = n + (n === 1 ? ' Label' : ' Labels');
+});
+</script>
+{% endblock %}

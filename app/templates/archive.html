@@ -1,0 +1,35 @@
+{% extends "base.html" %}
+{% set nav = 'home' %}
+{% block title %}Archiv · SoftLabel{% endblock %}
+{% block body %}
+<div class="row space-between" style="margin-bottom:16px">
+  <h1 style="margin:0">🗄 Archiv <span class="badge">{{ items|length }} Labels</span></h1>
+  <a class="btn ghost" href="{{ u('/') }}">← Zurück zu den Vorlagen</a>
+</div>
+{% if not items %}
+<div class="empty">Das Archiv ist leer. Labels lassen sich über „Archiv“ auf der Vorlagenseite hierher verschieben — sie bleiben erhalten und sind vor verseentlichem Löschen geschützt.</div>
+{% else %}
+<div class="panel" style="padding:0;overflow:hidden">
+  <table class="log" style="margin:0">
+    <tr><th></th><th>Name</th><th>Maße</th><th>Zuletzt geändert</th><th style="text-align:right;padding-right:16px">Aktionen</th></tr>
+    {% for t in items %}
+    <tr>
+      <td style="width:64px"><img src="{{ u('/api/thumb/') ~ t.id }}.png" style="width:60px;height:36px;object-fit:contain;background:#fff;border:1px solid var(--border);border-radius:5px" alt=""></td>
+      <td><a href="{{ u('/designer/') ~ t.id }}">{{ t.name }}</a></td>
+      <td class="note">{{ "%.1f"|format(t.width_mm) }} × {{ "%.1f"|format(t.height_mm) }} mm{% if t.label_count > 1 %} · {{ t.label_count }}er{% endif %}</td>
+      <td class="note">{{ t.updated_at }}{% if t.last_edited_by %} · {{ t.last_edited_by }}{% endif %}</td>
+      <td style="text-align:right;padding-right:16px;white-space:nowrap">
+        <button class="btn small" onclick="restore({{ t.id }})">↩ Wiederholen</button>
+        <button class="btn small danger" onclick="del({{ t.id }},'{{ t.name|e }}')">Endgültig löschen</button>
+      </td>
+    </tr>
+    {% endfor %}
+  </table>
+</div>
+<p class="note" style="margin-top:10px">„Wiederholen“ holt das Label zurück in seinen ursprünglichen Ordner. „Endgültig löschen“ entfernt es unwiderruflich — dafür muss es vorher im Archiv liegen (Schutz gegen Versehen).</p>
+{% endif %}
+<script>
+async function restore(id){ await fetch('{{ u("/api/templates") }}/'+id+'/archive?archived=0',{method:'POST'}); location.reload(); }
+async function del(id,name){ if(!confirm('Label „'+name+'“ endgültig löschen? Das kann nicht rückgängig gemacht werden.'))return; await fetch('{{ u("/api/templates") }}/'+id,{method:'DELETE'}); location.reload(); }
+</script>
+{% endblock %}

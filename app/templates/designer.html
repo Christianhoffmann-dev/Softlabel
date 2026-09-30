@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% set nav = 'designer' %}
+{% block title %}Designer · SoftLabel{% endblock %}
+{% block body %}
+<div class="designer">
+
+  <!-- Werkzeugleiste links -->
+  <div class="rail" title="Elemente hinzufügen">
+    <button data-add="text" title="Text"><i data-ic="text"></i></button>
+    <button data-add="field" title="Datenfeld (wert aus csv/excel)"><i data-ic="field"></i></button>
+    <div class="sep"></div>
+    <button data-add="barcode" title="Barcode"><i data-ic="barcode"></i></button>
+    <button data-add="qr" title="QR-Code"><i data-ic="qr"></i></button>
+    <div class="sep"></div>
+    <button data-add="line" title="Linie"><i data-ic="line"></i></button>
+    <button data-add="rect" title="Rahmen"><i data-ic="rect"></i></button>
+    <button data-add="asset" title="Bild / Logo"><i data-ic="image"></i></button>
+  </div>
+
+  <!-- Canvas -->
+  <div class="canvas-wrap">
+    <div class="toolbar">
+      <div class="tb-name">
+        <input id="tplName" type="text" placeholder="Name der Vorlage" spellcheck="false">
+        <span class="badge" id="dirtyFlag"></span>
+      </div>
+      <span class="tb-sep"></span>
+      <div class="tb-meta">
+        <button class="metachip" id="folderChip" title="In welchem Ordner / bei welchem Kunden?">
+          <i data-ic="folderI"></i><span id="folderChipLabel">Hauptbereich</span></button>
+        <button class="metachip" id="sizeChip" title="Label-Größe &amp; Bögen">
+          <i data-ic="ruler"></i><span id="sizeChipLabel">100 × 80 mm</span></button>
+      </div>
+      <span class="spacer"></span>
+      <button class="metachip toggle" id="snapBtn" title="Elemente rasten an Kanten, Mitten und am 0,5-mm-Raster ein">
+        <i data-ic="grid"></i>Snap</button>
+      <span class="tb-sep"></span>
+      <select id="zoomSel" class="zoomsel" title="Ansicht vergrößern">
+        <option value="0.6">60 %</option><option value="1" selected>100 %</option>
+        <option value="1.5">150 %</option><option value="2.2">220 %</option>
+      </select>
+      <button class="btn" id="btnSave"><i data-ic="save"></i> Speichern</button>
+      <button class="btn ghost" id="btnSavePrint"><i data-ic="print"></i> Drucken</button>
+    </div>
+
+    <div class="stagearea">
+      <div class="ruler-grid">
+        <div id="cornerBox">mm</div>
+        <div class="ruler" id="rulerTop"></div>
+        <div class="ruler" id="rulerLeft"></div>
+        <div id="stageHolder">
+          <div id="stageOuter"><div id="stage"></div><div id="hud"></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="hint" style="margin-top:8px">
+      Ziehen = verschieben · Ecken/Kanten = Größe · oberer Punkt = drehen ·
+      <span class="kbd">Pfeiltasten</span> 0,2 mm (<span class="kbd">Shift</span> 1 mm) ·
+      <span class="kbd">Entf</span> löschen · <span class="kbd">Strg+D</span> duplizieren · <span class="kbd">Strg+Z/Y</span> rückgängig/wiederholen · <span class="kbd">Doppelklick</span> Text bearbeiten ·
+      <span class="kbd">Alt+Klick</span> auf ein anderes Element = 🔗 verknüpfen
+    </div>
+  </div>
+
+  <!-- Eigenschaften rechts -->
+  <div class="props">
+    <div class="head"><h3 style="margin:0">Eigenschaften</h3><span class="badge" id="selKind"></span></div>
+    <div id="propsBody"><p class="hint">Kein Element ausgewählt.<br><br>Größe/Position änderst du direkt auf der Fläche — am besten mit dem Lineal als Orientierung.</p></div>
+  </div>
+</div>
+
+<!-- Ordner-Popover -->
+<div class="popover" id="folderPop">
+  <div class="hint" style="margin-bottom:8px">Label speichern unter:</div>
+  <div id="folderList"></div>
+  <div style="display:flex;gap:6px;margin-top:10px">
+    <input id="newFolderName" type="text" placeholder="Neuer Ordner / Kunde…" style="flex:1">
+    <button class="btn small" id="newFolderBtn">＋</button>
+  </div>
+</div>
+
+<!-- Größen-Popover -->
+<div class="popover" id="sizePop">
+  <div class="grp two">
+    <div><label>Breite (mm)</label><input id="pW" type="number" step="0.1" min="10" max="420"></div>
+    <div><label>Höhe (mm)</label><input id="pH" type="number" step="0.1" min="8" max="420"></div>
+  </div>
+  <div class="grp"><label>Auflösung</label>
+    <select id="pDpi"><option value="203">203 dpi (Zebra Standard)</option><option value="300" selected>300 dpi</option><option value="600">600 dpi</option></select></div>
+  <fieldset style="border:1px solid var(--border);border-radius:8px;padding:8px;margin:0 0 10px">
+    <legend style="font-size:11.5px;color:var(--dim);padding:0 4px">Etikettenbogen (optional)</legend>
+    <div class="grp two" style="margin-bottom:6px">
+      <div><label>Labels/Bogen</label><input id="pCount" type="number" value="1" min="1" max="320"></div>
+      <div><label>Spalten</label><input id="pCols" type="number" value="1" min="1" max="10"></div>
+    </div>
+    <div class="grp two" style="margin:0">
+      <div><label>Außenrand mm</label><input id="pMargin" type="number" value="2" min="0" step="0.5"></div>
+      <div><label>Abstand mm</label><input id="pGutter" type="number" value="3" min="0" step="0.5"></div>
+    </div>
+  </fieldset>
+  <div class="row space-between">
+    <span class="hint" id="popDims"></span>
+    <button class="btn small" id="sizeOk">Fertig</button>
+  </div>
+</div>
+
+<dialog id="assetDlg">
+  <div style="padding:12px;min-width:360px">
+    <h3>Bild wählen</h3>
+    <div id="assetList" class="grid" style="grid-template-columns:1fr 1fr;gap:8px"></div>
+    <hr style="border:0;border-top:1px solid var(--border);margin:12px 0">
+    <label class="btn small ghost" style="cursor:pointer"><i data-ic="image"></i> Bild hochladen<input type="file" id="assetFile" accept="image/*" hidden></label>
+    <div style="margin-top:12px"><button class="btn small ghost" id="assetClose">Schließen</button></div>
+  </div>
+</dialog>
+{% endblock %}
+{% block scripts %}
+<script>window.TPL_ID = {{ tid or 'null' }}; window.ASSETS = {{ assets | tojson }};
+window.FOLDER_ID = new URLSearchParams(location.search).get('folder') || {{ (t.folder_id if t and t.folder_id else 'null') }};
+window.FOLDERS = {{ folders | tojson }};</script>
+<script src="{{ u('/static/designer.js') }}"></script>
+{% endblock %}
