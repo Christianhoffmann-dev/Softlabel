@@ -20,7 +20,9 @@ Credential Manager.)
 3. Nach dem ersten Push baut **GitHub Actions automatisch** das Docker-Image (siehe
    `.github/workflows/docker.yml`, ~2–3 min). Fortschritt: Repo → Actions.
    Das Image liegt danach unter:
-   `ghcr.io/DEIN-USER/softlabel:latest`
+   `ghcr.io/christianhoffmann-dev/softlabel:latest`
+   (Hinweis: GitHub-Container-Registry erzwinget Kleinschreibung — im Image-Namen wird
+   `Softlabel` daher zu `softlabel`, Account `Christianhoffmann-dev` zu `christianhoffmann-dev`.)
    → Repo → Packages → softlabel → **Settings → Advanced → "Private" lassen oder "Public" machen.**
    Für private Images braucht Portainer einen "Secret" (GitHub-Token mit Scope `read:packages`),
    sonst: einfach auf Public stellen (Code ist intern ohnehin unkritisch, oder interner Registry nutzen).
@@ -29,12 +31,12 @@ Credential Manager.)
 
 1. Portainer → **Environments → dein Docker-Host → Stacks → Add stack**.
 2. Name: `softlabel`. Build method: **Web editor** und dieses YAML einfügen
-   (DEIN-USER ersetzen):
+   (ggf. an deinen Repo-Namen anpassen):
 
 ```yaml
 services:
   softlabel:
-    image: ghcr.io/DEIN-USER/softlabel:latest
+    image: ghcr.io/christianhoffmann-dev/softlabel:latest
     restart: unless-stopped
     ports:
       - "8000:8000"
